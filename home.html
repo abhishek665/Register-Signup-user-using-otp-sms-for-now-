@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %} Home {% endblock %}
+{% load static %}
+{% block css %}
+<style>
+    #popover{
+        background-color: whitesmoke;
+        border: none;
+    }
+    h6{
+        color: white;
+    }
+    label{
+        display: block;
+    }
+</style>
+{% endblock %}
+{% block body %}
+<div class="container" id="container" data-html="true">
+    <h3><b>Sign Up :-</b></h3>
+    <p id="desc"></p>
+    <label for="phone"><b>Enter The 10 Digit Phone Number :</b></label>
+    <input type="text" id="phone" placeholder="Enter The 10 Digit Phone Number">{% csrf_token %}
+    <button type="button" class="btn btn-success" name="submit" id="submit">Submit</button>
+    <button type="button" style="margin-top: 50px;" id="popover" class="btn btn-secondary" data-container="body" data-toggle="popover" data-html="true" data-placement="bottom" data-content=""></button>
+</div>
+<script>
+    var c;
+    $('#submit').on("click", function(){
+        var phone = document.getElementById('phone').value;
+        $.ajax({
+            type: 'post',
+            url: '/validate/',
+            data: {'phone': phone, 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+            beforeSend: function(){
+                document.getElementById('popover').setAttribute('data-content', '<h6 style="color:white;">Please Wait...</h6>');
+                $('#popover').popover('show');
+            },
+            success: function(data){
+                console.log(data);
+                $('#popover').popover('hide');
+                d = String(data)
+                if (d == 'Sent Successfully'){
+                    document.getElementById('phone').setAttribute('placeholder', 'Enter Otp');
+                    document.getElementById('desc').innerText = "Enter Otp";
+                    document.getElementById('phone').remove();
+                    document.getElementById('submit').remove();
+                    document.getElementById('container').innerHTML += '<input type="tel" id="otp" placeholder="enterOTP">';
+                    document.getElementById('container').innerHTML += '<button type="button" class="btn btn-success" id="cnfrmotp" onclick="return validate();">Submit</button>';
+                }
+                if (d == "User Exists"){
+                    document.getElementById('popover').setAttribute('data-content', '<h6 style="color:white;">User Already Exists With This Number. Please Try a Different Number.</h6>');
+                    $('#popover').popover('show');
+                }
+                if (d == "Limit Exceeded"){
+                    document.getElementById('popover').setAttribute('data-content', '<h6 style="color:white;">OTP Request Limit Exceeded. Account Can not Be Created With This Number.</h6>');
+                    $('#popover').popover('show');
+                }
+                if (d == "OTP Sending Error"){
+                    document.getElementById('popover').setAttribute('data-content', '<h6 style="color:white;">OTP Can not Be Sent Right Now. Please Try After Sometime.</h6>');
+                    $('#popover').popover('show');
+                }
+                if (d == "No Phone Number Provided"){
+                    document.getElementById('popover').setAttribute('data-content', '<h6 style="color:white;">Please Provide a Valid Phone Number To Continue.</h6>');
+                    $('#popover').popover('show');
+                }
+                if (d == "Invalid Phone Length"){
+                    document.getElementById('popover').setAttribute('data-content', '<h6 style="color:white;">Please Provide a Valid 10 Digit Phone Number.</h6>');
+                    $('#popover').popover('show');
+                }
+            }
+        })
+    });
+    function validate(){
+        var otp = document.getElementById('otp').value;
+        console.log(otp);
+        $.ajax({
+            type: 'post',
+            url: '/validate_otp/',
+            data: {'otp' : otp, 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+            beforeSend: function(){
+                $('#popover').popover('show');
+            },
+            success : function(data){
+                $('#popover').popover('hide');
+                d = String(data);
+                if (d == 'success'){
+                    window.location = '/user_info';
+                }
+                else{
+                    document.getElementById('desc').innerHTML = '<p style="color:red;">Invalid OTP.Please try Again</p>';
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
